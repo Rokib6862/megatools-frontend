@@ -1,0 +1,184 @@
+/* ============================================================
+   MEGA TOOLS — GLOBAL STYLES v2.1
+   ============================================================ */
+
+/* === SELF-HOSTED FONTS === */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* === RESET === */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+  /* FIX-CSS1 (v2.1): lock dark mode so the OS preference never
+     affects form controls / scrollbars / select dropdowns */
+  color-scheme: dark;
+}
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  height: 100%; overflow: hidden; line-height: 1.5;
+  -webkit-font-smoothing: antialiased; font-size: 14px; font-weight: 400;
+  background: #0F172A; color: #FFFFFF;
+  color-scheme: dark;
+}
+
+/* === DESIGN TOKENS === */
+:root {
+  color-scheme: dark;
+  --bg: #0F172A;
+  --bg-secondary: #1E293B;
+  --card-bg: #1E293B;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  --text: #FFFFFF;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --input-bg: #0F172A;
+  --input-border: #475569;
+  --input-focus-border: #38BDF8;
+  --input-focus-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  --table-hover: rgba(255, 255, 255, 0.02);
+  --table-header-bg: #1E293B;
+  --table-border: rgba(255, 255, 255, 0.06);
+  --header-bg: #0F172A;
+  --header-border: rgba(255, 255, 255, 0.08);
+  --accent: #38BDF8;
+  --accent-hover: #0EA5E9;
+  --accent-light: rgba(56, 189, 248, 0.12);
+  --success: #4ADE80;
+  --success-bg: rgba(74, 222, 128, 0.12);
+  --danger: #F87171;
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --warning: #FBBF24;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --info: #38BDF8;
+  --info-bg: rgba(56, 189, 248, 0.12);
+  --purple: #A78BFA;
+  --purple-bg: rgba(167, 139, 250, 0.12);
+  --stat-live: #4ADE80;
+  --stat-mobile: #38BDF8;
+  --stat-desktop: #A78BFA;
+  --stat-submissions: #F472B6;
+  --stat-unique: #38BDF8;
+}
+
+/* === ANIMATIONS === */
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes awayPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes badgePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+@keyframes supportPulse {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.18); }
+  60% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+@keyframes welcomeSlide {
+  from { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+
+/* === SELECTION === */
+::selection { background: var(--accent); color: #0F172A; }
+
+/* === LINKS === */
+a { color: var(--accent); text-decoration: none; transition: opacity 0.15s ease; }
+a:hover { opacity: 0.8; }
+
+/* === TABLE === */
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  text-align: left; padding: 10px 14px; font-size: 0.75rem;
+  color: #94A3B8; font-weight: 600; letter-spacing: 0.5px;
+  text-transform: uppercase; border-bottom: 1px solid var(--table-border);
+}
+tbody td {
+  padding: 10px 14px; font-size: 0.85rem;
+  border-bottom: 1px solid var(--table-border); color: #E2E8F0;
+  transition: background 0.15s ease;
+}
+tbody tr:hover td { background: var(--table-hover); }
+
+/* === INPUT === */
+input, select, textarea {
+  width: 100%; padding: 10px 14px;
+  background: var(--input-bg); color: #FFFFFF;
+  border: 1px solid var(--input-border); border-radius: 8px;
+  font-size: 0.875rem; font-family: inherit; outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+select option { background: #1E293B; color: #FFFFFF; }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
+}
+input::placeholder, textarea::placeholder { color: #64748B; }
+input:disabled, select:disabled, textarea:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* === BUTTON === */
+button {
+  cursor: pointer; font-family: inherit; border: none; outline: none;
+  font-weight: 500; transition: all 0.15s ease; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 16px; font-size: 0.8rem;
+  background: transparent; color: var(--text-secondary);
+}
+button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* === RESPONSIVE === */
+@media (max-width: 1024px) {
+  body { font-size: 13px; }
+  thead th { padding: 8px 10px; font-size: 0.68rem; }
+  tbody td { padding: 8px 10px; font-size: 0.78rem; }
+}
+@media (max-width: 480px) {
+  body { font-size: 12px; }
+  thead th { font-size: 0.65rem; padding: 6px 8px; }
+  tbody td { font-size: 0.72rem; padding: 6px 8px; }
+  button { min-height: 44px; padding: 10px 14px; }
+  input, select, textarea { min-height: 44px; padding: 10px 12px; }
+}

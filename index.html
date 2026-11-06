@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Mega Tools - Visitor Management System. Track, manage, and redirect your visitors in real-time with enterprise-grade inbox." />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="http://localhost:5173" />
+  <meta property="og:title" content="Mega Tools — Enterprise Visitor Management" />
+  <meta property="og:description" content="Track, manage, and redirect your visitors in real-time with enterprise-grade inbox." />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="http://localhost:5173" />
+  <meta name="twitter:title" content="Mega Tools — Enterprise Visitor Management" />
+  <meta name="twitter:description" content="Track, manage, and redirect your visitors in real-time with enterprise-grade inbox." />
+
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/logo.webp" />
+
+  <title>Mega Tools — Enterprise Visitor Management</title>
+
+  <!-- JSZip Library for Multi Step Generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    /* FIX-HTML1 (v1.1): force dark color-scheme on root so the browser
+       never auto-inverts native form controls / scrollbars / select
+       dropdowns when the OS is in light mode. Combined with the meta
+       tag above, the app now renders identically in dark, light, or
+       auto device modes. */
+    html, body, #root {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      color-scheme: dark;
+      background: #0F172A;
+    }
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background: #0F172A;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

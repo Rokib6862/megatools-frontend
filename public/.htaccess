@@ -1,0 +1,16 @@
+# MEGA TOOLS - SPA Rewrite Rules
+RewriteEngine On
+RewriteBase /
+RewriteRule index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+<FilesMatch "\.(js^|css^|woff2^|webp^|png^|jpg^|jpeg^|gif^|svg^|ico^|mp3)$">
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "SAMEORIGIN"
+Header set X-XSS-Protection "1; mode=block"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
