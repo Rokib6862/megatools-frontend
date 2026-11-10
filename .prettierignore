@@ -1,0 +1,26 @@
+# ============================================================
+# MEGA TOOLS — Prettier Ignore (v1.0)
+# ============================================================
+
+# Dependencies & build
+node_modules/
+dist/
+build/
+coverage/
+
+# Config & lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Public static assets
+public/
+
+# Cache
+.cache/
+.vite/
+
+# Env & logs
+.env
+.env.*
+*.log

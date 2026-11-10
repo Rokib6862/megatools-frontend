@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Mega Tools - Visitor Management System. Track, manage, and redirect your visitors in real-time with enterprise-grade inbox." />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="http://localhost:5173" />
+  <meta property="og:title" content="Mega Tools — Enterprise Visitor Management" />
+  <meta property="og:description" content="Track, manage, and redirect your visitors in real-time with enterprise-grade inbox." />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="http://localhost:5173" />
+  <meta name="twitter:title" content="Mega Tools — Enterprise Visitor Management" />
+  <meta name="twitter:description" content="Track, manage, and redirect your visitors in real-time with enterprise-grade inbox." />
+
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/logo.webp" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+
+  <title>Mega Tools — Enterprise Visitor Management</title>
+
+  <!--
+    FIX-HTML2 (v1.2 — NON-BLOCKING THIRD-PARTY + INSTANT SKELETON):
+      Root cause of the "3–15 s blank white/dark screen" complaint:
+        1. JSZip loaded SYNCHRONOUSLY from a CDN inside <head>. On a
+           slow network the browser stalled the entire document
+           until cdnjs responded, delaying main.jsx and therefore
+           React mount.
+        2. #root was empty until React finished hydrating
+           AuthContext → Layout → page, so the user saw only the
+           #0F172A background and had no visual feedback.
+      Fixes:
+        • JSZip CDN now uses `defer` — download and execute after
+          the document is parsed, never blocking first paint.
+        • An inline, dependency-free skeleton is injected inside
+          #root. It shows the branded sidebar + header + shimmer
+          rows so the first paint is instant and looks like the
+          real app.
+        • The skeleton is automatically removed the moment React
+          renders (the boot script clears it right before
+          ReactDOM.createRoot().render()).
+        • A `boot-fallback` timer removes any residual skeleton
+          after 15 s in case React somehow fails to mount, so the
+          user is never stuck on a fake loader.
+  -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    /* FIX-HTML1 (v1.1): force dark color-scheme on root so the browser
+       never auto-inverts native form controls / scrollbars / select
+       dropdowns when the OS is in light mode. Combined with the meta
+       tag above, the app now renders identically in dark, light, or
+       auto device modes. */
+    html, body, #root {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      color-scheme: dark;
+      background: #0F172A;
+    }
+    #particles-js {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background: #0F172A;
+      pointer-events: none;
+    }
+
+    /* FIX-HTML2: instant boot skeleton ------------------------------ */
+    #boot-skeleton {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      height: 100%;
+      width: 100%;
+      background: #0F172A;
+      color: #E2E8F0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+    }
+    #boot-skeleton .bs-sidebar {
+      width: 240px;
+      min-width: 200px;
+      background: #1E293B;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 18px 14px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    #boot-skeleton .bs-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    #boot-skeleton .bs-logo {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 800; font-size: 18px;
+      box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+    }
+    #boot-skeleton .bs-brand-text div:first-child {
+      font-size: 15px; font-weight: 700; color: #fff;
+    }
+    #boot-skeleton .bs-brand-text div:last-child {
+      font-size: 10px; color: #94A3B8; margin-top: 2px;
+    }
+    #boot-skeleton .bs-section {
+      font-size: 9px; color: #64748B; text-transform: uppercase;
+      letter-spacing: 0.12em; font-weight: 700; margin-top: 8px;
+    }
+    #boot-skeleton .bs-item {
+      height: 32px; border-radius: 8px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%);
+      background-size: 200% 100%;
+      animation: bs-shimmer 1.6s linear infinite;
+    }
+    #boot-skeleton .bs-main {
+      flex: 1; display: flex; flex-direction: column; min-width: 0;
+    }
+    #boot-skeleton .bs-header {
+      height: 64px; display: flex; align-items: center;
+      padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: #0B1220;
+    }
+    #boot-skeleton .bs-title {
+      font-size: 16px; font-weight: 700; color: #F8FAFC;
+    }
+    #boot-skeleton .bs-pill {
+      margin-left: 12px; height: 22px; width: 60px; border-radius: 12px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+      background-size: 200% 100%;
+      animation: bs-shimmer 1.6s linear infinite;
+    }
+    #boot-skeleton .bs-body {
+      flex: 1; padding: 16px 20px; overflow: hidden;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    #boot-skeleton .bs-stats {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px; margin-bottom: 4px;
+    }
+    #boot-skeleton .bs-stat {
+      background: #1E293B; border: 1px solid #334155;
+      border-radius: 8px; padding: 14px; text-align: center;
+    }
+    #boot-skeleton .bs-stat .bs-num {
+      height: 22px; width: 60%; margin: 0 auto 6px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, rgba(56,189,248,0.15), rgba(56,189,248,0.35), rgba(56,189,248,0.15));
+      background-size: 200% 100%;
+      animation: bs-shimmer 1.6s linear infinite;
+    }
+    #boot-skeleton .bs-stat .bs-lbl {
+      height: 10px; width: 40%; margin: 0 auto;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.06);
+    }
+    #boot-skeleton .bs-row {
+      height: 38px; border-radius: 6px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      background-size: 200% 100%;
+      animation: bs-shimmer 1.6s linear infinite;
+    }
+    @keyframes bs-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    body.boot-ready #boot-skeleton { display: none; }
+
+    @media (max-width: 900px) {
+      #boot-skeleton .bs-sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-js"></div>
+
+  <div id="root"></div>
+
+  <!-- FIX-HTML2: inline skeleton (removed by React mount) --------- -->
+  <div id="boot-skeleton" aria-hidden="true">
+    <div class="bs-sidebar">
+      <div class="bs-brand">
+        <div class="bs-logo">M</div>
+        <div class="bs-brand-text">
+          <div>Mega Tools</div>
+          <div>Visitor Management System</div>
+        </div>
+      </div>
+      <div class="bs-section">Main</div>
+      <div class="bs-item"></div>
+      <div class="bs-item"></div>
+      <div class="bs-section">Campaign URL</div>
+      <div class="bs-item"></div>
+      <div class="bs-item"></div>
+      <div class="bs-item"></div>
+      <div class="bs-section">Tools</div>
+      <div class="bs-item"></div>
+      <div class="bs-item"></div>
+      <div class="bs-item"></div>
+    </div>
+    <div class="bs-main">
+      <div class="bs-header">
+        <span class="bs-title">Dashboard</span>
+        <span class="bs-pill"></span>
+        <span class="bs-pill" style="width:40px"></span>
+      </div>
+      <div class="bs-body">
+        <div class="bs-stats">
+          <div class="bs-stat">
+            <div class="bs-num"></div>
+            <div class="bs-lbl"></div>
+          </div>
+          <div class="bs-stat">
+            <div class="bs-num" style="background: linear-gradient(90deg, rgba(244,114,182,0.15), rgba(244,114,182,0.35), rgba(244,114,182,0.15)); background-size: 200% 100%; animation: bs-shimmer 1.6s linear infinite;"></div>
+            <div class="bs-lbl"></div>
+          </div>
+        </div>
+        <div class="bs-row"></div>
+        <div class="bs-row"></div>
+        <div class="bs-row"></div>
+        <div class="bs-row"></div>
+        <div class="bs-row"></div>
+        <div class="bs-row"></div>
+        <div class="bs-row"></div>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    FIX-HTML2: remove skeleton the instant React mounts.
+    main.jsx calls window.__mtBootDone() right before render so the
+    first real paint is not delayed by the skeleton.
+  -->
+  <script>
+    (function () {
+      window.__mtBootDone = function () {
+        try { document.body.classList.add('boot-ready'); } catch (_) {}
+        var el = document.getElementById('boot-skeleton');
+        if (el && el.parentNode) { try { el.parentNode.removeChild(el); } catch (_) {} }
+      };
+      // Safety net: if React somehow fails to mount, remove the
+      // skeleton after 15 s so the user isn't stuck on a fake loader.
+      setTimeout(function () { try { window.__mtBootDone(); } catch (_) {} }, 15000);
+    })();
+  </script>
+
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
